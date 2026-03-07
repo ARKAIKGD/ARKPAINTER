@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ARK Painter</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="toolbar" aria-label="Drawing controls">
+        <div class="toolbar-header">
+          <h2 class="toolbar-title">File</h2>
+          <button id="toggle-toolbar" class="minimize-button" type="button" aria-label="Toggle toolbar">−</button>
+        </div>
+        <div id="toolbar-content" class="toolbar-content">
+          <div class="toolbar-main">
+            <div class="group">
+              <button id="new-project" class="tool-button danger">New Canvas</button>
+              <button id="save-project" class="tool-button">Save Project (Ctrl+S)</button>
+              <button id="load-project" class="tool-button">Load Project (Ctrl+O)</button>
+              <input id="load-project-input" class="visually-hidden" type="file" accept="application/json" />
+              <input id="import-image-input" class="visually-hidden" type="file" accept="image/png,image/jpeg,image/jpg" />
+              <button id="hard-refresh" class="tool-button">Hard Refresh (Ctrl+F5)</button>
+              <button id="fullscreen-toggle" class="tool-button">Fullscreen (F11)</button>
+              <button id="undo" class="tool-button">Undo (Ctrl+Z)</button>
+              <button id="redo" class="tool-button">Redo (Ctrl+Y)</button>
+              <button id="clear" class="tool-button danger">Clear Layer</button>
+              <button id="save" class="tool-button primary">Export PNG</button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div id="brush-settings-modal" class="brush-modal hidden" aria-hidden="true">
+        <div class="brush-modal-backdrop" data-close-brush-settings="true"></div>
+        <section class="brush-modal-panel" role="dialog" aria-modal="true" aria-label="Brush settings">
+          <header class="brush-modal-header">
+            <h2>Brush Settings</h2>
+            <button id="close-brush-settings" class="tool-button" type="button">Close</button>
+          </header>
+
+          <div class="brush-modal-grid">
+            <label class="inline-control" for="brush-min-size">
+              <span>Min Size (px)</span>
+              <input id="brush-min-size" type="range" min="0" max="100" value="0" />
+              <output id="brush-min-size-value">0px</output>
+            </label>
+            <label class="inline-control" for="brush-max-size">
+              <span>Max Size (px)</span>
+              <input id="brush-max-size" type="range" min="1" max="100" value="100" />
+              <output id="brush-max-size-value">100px</output>
+            </label>
+            <label class="inline-control" for="brush-min-opacity">
+              <span>Min Opacity</span>
+              <input id="brush-min-opacity" type="range" min="1" max="100" value="1" />
+              <output id="brush-min-opacity-value">1%</output>
+            </label>
+            <label class="inline-control" for="brush-max-opacity">
+              <span>Max Opacity</span>
+              <input id="brush-max-opacity" type="range" min="1" max="100" value="100" />
+              <output id="brush-max-opacity-value">100%</output>
+            </label>
+            <label class="inline-control" for="start-taper">
+              <span>Start Taper</span>
+              <input id="start-taper" type="range" min="0" max="100" value="0" />
+              <output id="start-taper-value">0%</output>
+            </label>
+            <label class="inline-control" for="end-taper">
+              <span>End Taper</span>
+              <input id="end-taper" type="range" min="0" max="100" value="0" />
+              <output id="end-taper-value">0%</output>
+            </label>
+            <label class="inline-control" for="speed-size-reduction">
+              <span>Speed Size</span>
+              <input id="speed-size-reduction" type="range" min="0" max="100" value="0" />
+              <output id="speed-size-reduction-value">0%</output>
+            </label>
+            <label class="inline-control" for="spacing">
+              <span>Spacing</span>
+              <input id="spacing" type="range" min="1" max="100" value="16" />
+              <output id="spacing-value">16%</output>
+            </label>
+            <label class="inline-control" for="jitter">
+              <span>Jitter</span>
+              <input id="jitter" type="range" min="0" max="100" value="0" />
+              <output id="jitter-value">0%</output>
+            </label>
+            <label class="inline-control" for="interpolation">
+              <span>Interpolation</span>
+              <input id="interpolation" type="range" min="50" max="300" value="100" />
+              <output id="interpolation-value">100%</output>
+            </label>
+            <label class="inline-control" for="pressure-mode">
+              <span>Pressure</span>
+              <select id="pressure-mode" class="tool-select">
+                <option value="off">Off</option>
+                <option value="size">Size</option>
+                <option value="opacity">Opacity</option>
+                <option value="both">Both</option>
+              </select>
+            </label>
+          </div>
+        </section>
+      </div>
+
+      <section id="canvas-stage" class="canvas-stage" aria-label="Drawing canvas">
+        <aside class="layer-panel" aria-label="Layer controls">
+          <div class="layer-panel-header">
+            <h3 class="layer-panel-title">Layers</h3>
+            <button id="toggle-layers" class="minimize-button" type="button" aria-label="Toggle layers panel">−</button>
+          </div>
+          <div id="layer-panel-content" class="layer-panel-content">
+            <div class="layer-controls">
+            
+            <label class="layer-control-item" for="active-layer">
+              <span>Active:</span>
+              <select id="active-layer" class="tool-select"></select>
+            </label>
+
+            <div class="layer-button-row">
+              <button id="add-layer" class="tool-button compact">+ Add</button>
+              <button id="import-image" class="tool-button compact">Import</button>
+            </div>
+
+            <div class="layer-button-row">
+              <button id="layer-up" class="tool-button compact">↑ Up</button>
+              <button id="layer-down" class="tool-button compact">↓ Down</button>
+            </div>
+
+            <div class="layer-button-row">
+              <button id="toggle-layer" class="tool-button compact">Hide/Show</button>
+              <button id="delete-layer" class="tool-button compact">Delete</button>
+            </div>
+
+            <div class="layer-button-row">
+              <button id="merge-down" class="tool-button compact">Merge Down</button>
+              <button id="flatten-all" class="tool-button compact">Flatten All</button>
+            </div>
+
+            <label class="layer-control-item" for="layer-blend-mode">
+              <span>Blend:</span>
+              <select id="layer-blend-mode" class="tool-select">
+                <option value="source-over">Normal</option>
+                <option value="multiply">Multiply</option>
+                <option value="screen">Screen</option>
+              </select>
+            </label>
+
+            <label class="layer-control-item" for="layer-opacity">
+              <span>Opacity:</span>
+              <input id="layer-opacity" type="range" min="0" max="100" value="100" />
+              <output id="layer-opacity-value">100%</output>
+            </label>
+
+            <button id="layer-clip" class="tool-button compact full-width">Clip: Off</button>
+          </div>
+          
+          <div id="layer-thumbnails" class="layer-thumbnails"></div>
+          </div>
+        </aside>
+
+        <aside class="tools-panel" aria-label="Tool controls">
+          <div class="tools-panel-header">
+            <h3 class="tools-panel-title">Tools</h3>
+            <button id="toggle-tools" class="minimize-button" type="button" aria-label="Toggle tools panel">−</button>
+          </div>
+          <div id="tools-panel-content" class="tools-panel-content">
+            <div class="tools-controls">
+              <button id="tool-brush" class="tool-button active" data-tool="brush">Brush (B)</button>
+              <button id="tool-eraser" class="tool-button" data-tool="eraser">Eraser (E)</button>
+              <div class="tool-cluster" aria-label="Special tools">
+                <span class="tool-cluster-label">Tools</span>
+                <button id="tool-transform" class="tool-button" data-tool="transform" type="button">Transform</button>
+                <button id="tool-fill" class="tool-button" data-tool="fill" type="button">Fill</button>
+                <button id="tool-blur" class="tool-button" data-tool="blur" type="button">Blur</button>
+              </div>
+              <label class="inline-control" for="color-picker">
+                <span>Color</span>
+                <input id="color-picker" type="color" value="#111111" />
+              </label>
+
+              <label class="inline-control" for="brush-preset">
+                <span>Preset</span>
+                <select id="brush-preset" class="tool-select">
+                  <option value="hard">Hard Round</option>
+                  <option value="soft">Soft Shade</option>
+                  <option value="ink">Inker</option>
+                </select>
+              </label>
+              <div class="slider-cluster" aria-label="Main sliders">
+                <span class="tool-cluster-label">Sliders</span>
+                <label class="inline-control" for="brush-size">
+                  <span>Size</span>
+                  <input id="brush-size" type="range" min="1" max="100" value="12" />
+                  <output id="brush-size-value">12</output>
+                </label>
+
+                <label class="inline-control" for="brush-opacity">
+                  <span>Opacity</span>
+                  <input id="brush-opacity" type="range" min="1" max="100" value="100" />
+                  <output id="brush-opacity-value">100%</output>
+                </label>
+                <label class="inline-control" for="stabilizer">
+                  <span>Stabilizer</span>
+                  <input id="stabilizer" type="range" min="0" max="100" value="30" />
+                  <output id="stabilizer-value">30%</output>
+                </label>
+              </div>
+              <button id="smooth-opacity-toggle" class="tool-button active" type="button">Smooth Opacity: On</button>
+              <button id="open-brush-settings" class="tool-button" type="button">Brush Settings</button>
+              <label class="inline-control" for="symmetry-mode">
+                <span>Symmetry</span>
+                <select id="symmetry-mode" class="tool-select">
+                  <option value="off">Off</option>
+                  <option value="vertical">Vertical</option>
+                  <option value="horizontal">Horizontal</option>
+                  <option value="both">Both</option>
+                </select>
+              </label>
+              <button id="touch-toggle" class="tool-button" type="button">Touch: On</button>
+            </div>
+          </div>
+        </aside>
+
+        <div id="canvas-viewport" class="canvas-viewport">
+          <canvas id="paint-canvas" width="1600" height="1000" aria-label="Paint canvas"></canvas>
+          <canvas id="guide-canvas" width="1600" height="1000" aria-hidden="true"></canvas>
+        </div>
+      </section>
+
+      <footer class="status-bar">
+        <p id="status-text">Tool: Brush | Preset: Hard Round | Layer: Layer 1 | Layer Opacity: 100% | Blend: Normal | Symmetry: Off | Stabilizer: 30% | Zoom: 100%</p>
+      </footer>
+    </main>
+
+    <!-- Diagnostic Overlay -->
+    <div id="diagnostic-overlay" style="display: none; position: fixed; top: 10px; right: 10px; background: rgba(0,0,0,0.9); color: #0f0; padding: 15px; font-family: monospace; font-size: 12px; z-index: 9999; max-width: 400px; border: 2px solid #0f0; border-radius: 4px;">
+      <div style="font-weight: bold; margin-bottom: 10px; color: #ff0;">🔍 DIAGNOSTICS</div>
+      <div id="diagnostic-log">Initializing...</div>
+    </div>
+
+    <!-- Quick Tools Window -->
+    <div id="view-window-modal" class="view-modal" aria-hidden="false">
+      <div id="view-window" class="view-modal-content" role="dialog" aria-label="Quick Tools">
+        <div id="view-header" class="view-window-header">
+          <span>Quick Tools</span>
+          <button id="minimize-view" class="tool-button view-minimize">−</button>
+        </div>
+        <div id="view-window-content" class="view-window-content">
+          <div id="save-status" class="save-status">Unsaved Changes</div>
+          <label class="view-option-item" for="zoom-value">
+            <span>Zoom</span>
+            <output id="zoom-value">100%</output>
+          </label>
+          <div class="view-button-group">
+            <button id="zoom-out" class="tool-button compact">−</button>
+            <button id="zoom-in" class="tool-button compact">+</button>
+          </div>
+          <button id="zoom-reset" class="tool-button compact full-width">Reset View</button>
+          <button id="flip-toggle" class="tool-button compact full-width" type="button">Flip H: Off</button>
+          <button id="preview-toggle" class="tool-button compact" type="button">Preview</button>
+          <button id="flip-vertical-toggle" class="tool-button compact" type="button">Flip V: Off</button>
+          <div class="view-button-group" style="grid-template-columns: repeat(4, 1fr);">
+            <button id="quick-size-1" class="tool-button compact" title="Size 1">1</button>
+            <button id="quick-size-12" class="tool-button compact" title="Size 12">12</button>
+            <button id="quick-size-24" class="tool-button compact" title="Size 24">24</button>
+            <button id="quick-size-48" class="tool-button compact" title="Size 48">48</button>
+          </div>
+          <div class="view-button-group">
+            <button id="quick-tool-eraser" class="tool-button compact icon-button" title="Eraser">⌫</button>
+            <button id="quick-tool-brush" class="tool-button compact icon-button" title="Brush">✏</button>
+          </div>
+          <div class="view-button-group">
+            <button id="quick-undo" class="tool-button compact icon-button" title="Undo">↶</button>
+            <button id="quick-redo" class="tool-button compact icon-button" title="Redo">↷</button>
+          </div>
+          <button id="quick-save-project" class="tool-button compact full-width">Quick Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Preview Modal -->
+    <div id="preview-modal" class="preview-modal hidden" aria-hidden="true">
+      <div id="preview-window" class="preview-modal-content" role="dialog" aria-label="Canvas Preview">
+        <div id="preview-header" class="preview-window-header">
+          <span>Canvas Preview</span>
+          <button id="close-preview" class="tool-button preview-close">Close</button>
+        </div>
+        <canvas id="preview-canvas"></canvas>
+      </div>
+    </div>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
