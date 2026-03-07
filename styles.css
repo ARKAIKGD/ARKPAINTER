@@ -192,6 +192,33 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+.color-history {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 8px;
+  padding: 4px 0;
+}
+
+.color-swatch {
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--line);
+  border-radius: 4px;
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.1s, border-color 0.1s;
+}
+
+.color-swatch:hover {
+  transform: scale(1.15);
+  border-color: var(--accent-strong);
+}
+
+.color-swatch:active {
+  transform: scale(1.05);
+}
+
 .tool-button {
   border: 1px solid var(--line);
   background: var(--panel-strong);

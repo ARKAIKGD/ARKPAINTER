@@ -121,6 +121,7 @@ const quickSize12Button = document.getElementById("quick-size-12");
 const quickSize24Button = document.getElementById("quick-size-24");
 const quickSize48Button = document.getElementById("quick-size-48");
 const saveStatusElement = document.getElementById("save-status");
+const colorHistoryContainer = document.getElementById("color-history");
 const toolbar = document.querySelector(".toolbar");
 const layerPanel = document.querySelector(".layer-panel");
 const toolsPanel = document.querySelector(".tools-panel");
@@ -247,6 +248,7 @@ const state = {
   currentProjectFileHandle: null,
   transformSelection: null,
   hasUnsavedChanges: false,
+  colorHistory: [],
   transformBufferCanvas: null,
   transformBaseCanvas: null,
   transformMode: "idle",
@@ -1684,7 +1686,8 @@ function buildProjectPayload() {
       panY: state.panY,
       toolbarCollapsed: state.toolbarCollapsed,
       layersCollapsed: state.layersCollapsed,
-      toolsCollapsed: state.toolsCollapsed
+      toolsCollapsed: state.toolsCollapsed,
+      colorHistory: state.colorHistory
     }
   };
 }
@@ -1756,6 +1759,7 @@ function applyUiState(ui) {
   state.toolbarCollapsed = typeof ui.toolbarCollapsed === "boolean" ? ui.toolbarCollapsed : false;
   state.layersCollapsed = typeof ui.layersCollapsed === "boolean" ? ui.layersCollapsed : false;
   state.toolsCollapsed = typeof ui.toolsCollapsed === "boolean" ? ui.toolsCollapsed : false;
+  state.colorHistory = Array.isArray(ui.colorHistory) ? ui.colorHistory.slice(0, 10) : [];
   enforceBrushLimits();
 }
 
@@ -1855,6 +1859,7 @@ async function loadProjectPayload(payload) {
   applyUiState(payload.ui);
   await applySnapshot(payload.snapshot);
   syncUiControlsFromState();
+  updateColorHistoryUI();
   state.history = [serializeSnapshot()];
   state.future = [];
   persistDocumentSoon();
@@ -2177,6 +2182,43 @@ function updateSaveStatus() {
     saveStatusElement.textContent = "Saved";
     saveStatusElement.className = "save-status saved";
   }
+}
+
+function addColorToHistory(color) {
+  // Remove if already exists
+  const index = state.colorHistory.indexOf(color);
+  if (index !== -1) {
+    state.colorHistory.splice(index, 1);
+  }
+  
+  // Add to front
+  state.colorHistory.unshift(color);
+  
+  // Keep only last 10
+  if (state.colorHistory.length > 10) {
+    state.colorHistory = state.colorHistory.slice(0, 10);
+  }
+  
+  updateColorHistoryUI();
+}
+
+function updateColorHistoryUI() {
+  if (!colorHistoryContainer) return;
+  
+  colorHistoryContainer.innerHTML = "";
+  
+  state.colorHistory.forEach(color => {
+    const swatch = document.createElement("button");
+    swatch.className = "color-swatch";
+    swatch.style.backgroundColor = color;
+    swatch.title = color;
+    swatch.addEventListener("click", () => {
+      state.color = color;
+      colorPicker.value = color;
+      updateStatus();
+    });
+    colorHistoryContainer.appendChild(swatch);
+  });
 }
 
 async function undo() {
@@ -3656,6 +3698,7 @@ if (blurButton) {
 
 colorPicker.addEventListener("input", (event) => {
   state.color = event.target.value;
+  addColorToHistory(state.color);
   updateStatus();
   persistDocumentSoon();
 });
@@ -4179,6 +4222,7 @@ async function initializeCanvas() {
   persistDocumentSoon();
   updateStatus();
   updateSaveStatus();
+  updateColorHistoryUI();
   logDiagnostic('Initialization complete!');
   
   // Check critical elements
