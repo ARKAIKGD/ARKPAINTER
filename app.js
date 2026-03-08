@@ -23,6 +23,8 @@ const guideCtx = guideCanvas.getContext("2d", { alpha: true });
 const stage = document.getElementById("canvas-stage");
 const viewport = document.getElementById("canvas-viewport");
 const layerThumbnails = document.getElementById("layer-thumbnails");
+const colorHistoryContainer = document.getElementById("color-history");
+console.log("Color history container:", colorHistoryContainer);
 
 console.log("Stage:", stage, "Viewport:", viewport, "Thumbnails:", layerThumbnails);
 
@@ -32,6 +34,7 @@ const transformButton = document.getElementById("tool-transform");
 const fillButton = document.getElementById("tool-fill");
 const blurButton = document.getElementById("tool-blur");
 const colorPicker = document.getElementById("color-picker");
+console.log("Color picker element:", colorPicker);
 const presetSelect = document.getElementById("brush-preset");
 const sizeInput = document.getElementById("brush-size");
 const sizeValue = document.getElementById("brush-size-value");
@@ -121,7 +124,6 @@ const quickSize12Button = document.getElementById("quick-size-12");
 const quickSize24Button = document.getElementById("quick-size-24");
 const quickSize48Button = document.getElementById("quick-size-48");
 const saveStatusElement = document.getElementById("save-status");
-const colorHistoryContainer = document.getElementById("color-history");
 const toolbar = document.querySelector(".toolbar");
 const layerPanel = document.querySelector(".layer-panel");
 const toolsPanel = document.querySelector(".tools-panel");
@@ -2208,6 +2210,7 @@ function updateColorHistoryUI() {
   if (!colorHistoryContainer) return;
   
   colorHistoryContainer.innerHTML = "";
+  console.log('Updating color history UI with', state.colorHistory.length, 'colors:', state.colorHistory);
   
   state.colorHistory.forEach(color => {
     const swatch = document.createElement("button");
@@ -2217,8 +2220,14 @@ function updateColorHistoryUI() {
     swatch.type = "button";
     swatch.addEventListener("click", (e) => {
       e.preventDefault();
+      console.log('Swatch clicked:', color);
       state.color = color;
-      colorPicker.value = color;
+      if (colorPicker) {
+        colorPicker.value = color;
+        console.log('Updated color picker to:', color);
+      } else {
+        console.error('Color picker not available to update');
+      }
       updateStatus();
       markAsUnsaved();
       persistDocumentSoon();
@@ -3703,13 +3712,25 @@ if (blurButton) {
 }
 
 if (colorPicker) {
+  console.log('Color picker found, attaching listener');
   colorPicker.addEventListener("input", (event) => {
+    console.log('Color picker input event:', event.target.value);
     state.color = event.target.value;
     addColorToHistory(state.color);
     updateStatus();
     markAsUnsaved();
     persistDocumentSoon();
   });
+  colorPicker.addEventListener("change", (event) => {
+    console.log('Color picker change event:', event.target.value);
+    state.color = event.target.value;
+    addColorToHistory(state.color);
+    updateStatus();
+    markAsUnsaved();
+    persistDocumentSoon();
+  });
+} else {
+  console.error('Color picker element not found!');
 }
 
 presetSelect.addEventListener("input", (event) => {
