@@ -192,7 +192,7 @@ const TRANSFORM_MIN_SCALE = 0.05;
 const state = {
   tool: "brush",
   preset: "hard",
-  color: colorPicker.value,
+  color: colorPicker ? colorPicker.value : "#111111",
   size: Number(sizeInput.value),
   opacity: Number(opacityInput.value) / 100,
   smoothing: Number(stabilizerInput.value) / 100,
