@@ -1764,7 +1764,9 @@ function applyUiState(ui) {
 }
 
 function syncUiControlsFromState() {
-  colorPicker.value = state.color;
+  if (colorPicker) {
+    colorPicker.value = state.color;
+  }
   presetSelect.value = state.preset;
   sizeInput.value = String(state.size);
   sizeValue.textContent = String(state.size);
@@ -2212,10 +2214,14 @@ function updateColorHistoryUI() {
     swatch.className = "color-swatch";
     swatch.style.backgroundColor = color;
     swatch.title = color;
-    swatch.addEventListener("click", () => {
+    swatch.type = "button";
+    swatch.addEventListener("click", (e) => {
+      e.preventDefault();
       state.color = color;
       colorPicker.value = color;
       updateStatus();
+      markAsUnsaved();
+      persistDocumentSoon();
     });
     colorHistoryContainer.appendChild(swatch);
   });
@@ -3696,12 +3702,15 @@ if (blurButton) {
   blurButton.addEventListener("click", () => setTool("blur"));
 }
 
-colorPicker.addEventListener("input", (event) => {
-  state.color = event.target.value;
-  addColorToHistory(state.color);
-  updateStatus();
-  persistDocumentSoon();
-});
+if (colorPicker) {
+  colorPicker.addEventListener("input", (event) => {
+    state.color = event.target.value;
+    addColorToHistory(state.color);
+    updateStatus();
+    markAsUnsaved();
+    persistDocumentSoon();
+  });
+}
 
 presetSelect.addEventListener("input", (event) => {
   state.preset = event.target.value;
