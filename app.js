@@ -117,6 +117,7 @@ const hardRefreshButton = document.getElementById("hard-refresh");
 const fullscreenToggleButton = document.getElementById("fullscreen-toggle");
 const quickToolBrushButton = document.getElementById("quick-tool-brush");
 const quickToolEraserButton = document.getElementById("quick-tool-eraser");
+const quickToolEyedropperButton = document.getElementById("quick-tool-eyedropper");
 const quickUndoButton = document.getElementById("quick-undo");
 const quickRedoButton = document.getElementById("quick-redo");
 const quickSize1Button = document.getElementById("quick-size-1");
@@ -3047,11 +3048,19 @@ function startDrawing(event) {
     return;
   }
 
-  // Eye dropper mode with Alt key
-  if (event.altKey && (state.tool === "brush" || state.tool === "eraser")) {
+  // Eye dropper mode with Alt key or button toggle
+  if ((event.altKey || state.eyeDropperActive) && (state.tool === "brush" || state.tool === "eraser")) {
     event.preventDefault();
     const point = screenToCanvas(event);
     pickColorFromCanvas(point);
+    // Auto-disable eye dropper after picking if button was used
+    if (state.eyeDropperActive && !event.altKey) {
+      state.eyeDropperActive = false;
+      if (quickToolEyedropperButton) {
+        quickToolEyedropperButton.classList.remove("active");
+      }
+      canvas.style.cursor = "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='6' viewBox='0 0 6 6'%3E%3Ccircle cx='3' cy='3' r='1.4' fill='%23000000'/%3E%3C/svg%3E\") 3 3, auto";
+    }
     return;
   }
 
@@ -3127,10 +3136,10 @@ function draw(event) {
     return;
   }
 
-  // Update cursor for eye dropper when Alt is held
-  if (event.altKey && (state.tool === "brush" || state.tool === "eraser") && !state.drawing) {
+  // Update cursor for eye dropper when Alt is held or button is active
+  if ((event.altKey || state.eyeDropperActive) && (state.tool === "brush" || state.tool === "eraser") && !state.drawing) {
     canvas.style.cursor = "crosshair";
-  } else if (!state.drawing && state.tool !== "transform") {
+  } else if (!state.drawing && state.tool !== "transform" && !state.eyeDropperActive) {
     canvas.style.cursor = "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='6' viewBox='0 0 6 6'%3E%3Ccircle cx='3' cy='3' r='1.4' fill='%23000000'/%3E%3C/svg%3E\") 3 3, auto";
   }
 
@@ -4131,6 +4140,18 @@ if (quickToolBrushButton) {
 if (quickToolEraserButton) {
   quickToolEraserButton.addEventListener("click", () => {
     setTool("eraser");
+  });
+}
+
+if (quickToolEyedropperButton) {
+  quickToolEyedropperButton.addEventListener("click", () => {
+    state.eyeDropperActive = !state.eyeDropperActive;
+    quickToolEyedropperButton.classList.toggle("active", state.eyeDropperActive);
+    if (state.eyeDropperActive) {
+      canvas.style.cursor = "crosshair";
+    } else {
+      canvas.style.cursor = "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='6' viewBox='0 0 6 6'%3E%3Ccircle cx='3' cy='3' r='1.4' fill='%23000000'/%3E%3C/svg%3E\") 3 3, auto";
+    }
   });
 }
 
