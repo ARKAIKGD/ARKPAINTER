@@ -3716,13 +3716,23 @@ if (colorPicker) {
   // Use 'input' for eye dropper and real-time updates
   colorPicker.addEventListener("input", (event) => {
     console.log('Color picker input event:', event.target.value);
-    state.color = event.target.value;
+    const newColor = event.target.value;
+    state.color = newColor;
+    // Ensure the picker visually matches (in case browser doesn't auto-update)
+    if (colorPicker.value !== newColor) {
+      colorPicker.value = newColor;
+    }
     updateStatus();
   });
   // Use 'change' to add to history when selection is finalized
   colorPicker.addEventListener("change", (event) => {
     console.log('Color picker change event:', event.target.value);
-    state.color = event.target.value;
+    const newColor = event.target.value;
+    state.color = newColor;
+    // Ensure the picker visually matches
+    if (colorPicker.value !== newColor) {
+      colorPicker.value = newColor;
+    }
     addColorToHistory(state.color);
     updateStatus();
     markAsUnsaved();
