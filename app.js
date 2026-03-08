@@ -3712,7 +3712,14 @@ if (blurButton) {
 }
 
 if (colorPicker) {
-  console.log('Color picker found, attaching listener');
+  console.log('Color picker found, attaching listeners');
+  // Use 'input' for eye dropper and real-time updates
+  colorPicker.addEventListener("input", (event) => {
+    console.log('Color picker input event:', event.target.value);
+    state.color = event.target.value;
+    updateStatus();
+  });
+  // Use 'change' to add to history when selection is finalized
   colorPicker.addEventListener("change", (event) => {
     console.log('Color picker change event:', event.target.value);
     state.color = event.target.value;
