@@ -193,6 +193,7 @@ const state = {
   tool: "brush",
   preset: "hard",
   color: colorPicker ? colorPicker.value : "#111111",
+  eyeDropperActive: false,
   size: Number(sizeInput.value),
   opacity: Number(opacityInput.value) / 100,
   smoothing: Number(stabilizerInput.value) / 100,
@@ -2338,6 +2339,54 @@ function parseHexColor(hex) {
   };
 }
 
+function rgbToHex(r, g, b) {
+  const toHex = (n) => {
+    const hex = Math.round(Math.max(0, Math.min(255, n))).toString(16);
+    return hex.length === 1 ? '0' + hex : hex;
+  };
+  return '#' + toHex(r) + toHex(g) + toHex(b);
+}
+
+function pickColorFromCanvas(point) {
+  // Create a temporary canvas with the composite view
+  const tempCanvas = document.createElement("canvas");
+  tempCanvas.width = CANVAS_WIDTH;
+  tempCanvas.height = CANVAS_HEIGHT;
+  const tempCtx = tempCanvas.getContext("2d", { alpha: true });
+  
+  // Draw all visible layers
+  state.layers.forEach((layer, index) => {
+    if (layer.visible) {
+      drawLayerToTarget(tempCtx, layer, index);
+    }
+  });
+  
+  // Sample the pixel at the point
+  const x = Math.max(0, Math.min(CANVAS_WIDTH - 1, Math.round(point.x)));
+  const y = Math.max(0, Math.min(CANVAS_HEIGHT - 1, Math.round(point.y)));
+  const imageData = tempCtx.getImageData(x, y, 1, 1);
+  const data = imageData.data;
+  
+  const r = data[0];
+  const g = data[1];
+  const b = data[2];
+  const a = data[3];
+  
+  // Only pick non-transparent pixels
+  if (a > 0) {
+    const hexColor = rgbToHex(r, g, b);
+    state.color = hexColor;
+    if (colorPicker) {
+      colorPicker.value = hexColor;
+    }
+    addColorToHistory(hexColor);
+    updateStatus();
+    markAsUnsaved();
+    persistDocumentSoon();
+    console.log('Picked color from canvas:', hexColor);
+  }
+}
+
 function floodFillAt(point) {
   const layer = getActiveLayer();
   if (!layer || !layer.visible) {
@@ -2998,6 +3047,14 @@ function startDrawing(event) {
     return;
   }
 
+  // Eye dropper mode with Alt key
+  if (event.altKey && (state.tool === "brush" || state.tool === "eraser")) {
+    event.preventDefault();
+    const point = screenToCanvas(event);
+    pickColorFromCanvas(point);
+    return;
+  }
+
   if (shouldPan(event)) {
     logDiagnostic('Pan mode active');
     startPan(event);
@@ -3068,6 +3125,13 @@ function draw(event) {
   if (isTouchDrawingBlocked(event)) {
     handleTouchPointerMove(event);
     return;
+  }
+
+  // Update cursor for eye dropper when Alt is held
+  if (event.altKey && (state.tool === "brush" || state.tool === "eraser") && !state.drawing) {
+    canvas.style.cursor = "crosshair";
+  } else if (!state.drawing && state.tool !== "transform") {
+    canvas.style.cursor = "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='6' viewBox='0 0 6 6'%3E%3Ccircle cx='3' cy='3' r='1.4' fill='%23000000'/%3E%3C/svg%3E\") 3 3, auto";
   }
 
   if (state.panning && state.panStart) {
