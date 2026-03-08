@@ -3713,6 +3713,10 @@ if (blurButton) {
 
 if (colorPicker) {
   console.log('Color picker found, attaching listeners');
+  // Debug: Log when the picker is clicked
+  colorPicker.addEventListener("click", (event) => {
+    console.log('Color picker clicked');
+  });
   // Use 'input' for eye dropper and real-time updates
   colorPicker.addEventListener("input", (event) => {
     console.log('Color picker input event:', event.target.value);
@@ -3723,6 +3727,8 @@ if (colorPicker) {
       colorPicker.value = newColor;
     }
     updateStatus();
+    // Show visual feedback
+    console.log('State color updated to:', state.color);
   });
   // Use 'change' to add to history when selection is finalized
   colorPicker.addEventListener("change", (event) => {
@@ -3737,6 +3743,7 @@ if (colorPicker) {
     updateStatus();
     markAsUnsaved();
     persistDocumentSoon();
+    console.log('Color saved to history:', state.color);
   });
 } else {
   console.error('Color picker element not found!');
