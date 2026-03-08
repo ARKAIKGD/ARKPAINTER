@@ -3713,14 +3713,6 @@ if (blurButton) {
 
 if (colorPicker) {
   console.log('Color picker found, attaching listener');
-  colorPicker.addEventListener("input", (event) => {
-    console.log('Color picker input event:', event.target.value);
-    state.color = event.target.value;
-    addColorToHistory(state.color);
-    updateStatus();
-    markAsUnsaved();
-    persistDocumentSoon();
-  });
   colorPicker.addEventListener("change", (event) => {
     console.log('Color picker change event:', event.target.value);
     state.color = event.target.value;
