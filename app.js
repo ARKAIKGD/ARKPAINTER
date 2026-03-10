@@ -260,6 +260,7 @@ const state = {
   transformDraftCurrent: null,
   transformAction: null,
   transformDirty: false,
+  copiedPixels: null,
   toolbarCollapsed: false,
   layersCollapsed: false,
   toolsCollapsed: false
@@ -2639,6 +2640,64 @@ function clearTransformState() {
   state.transformDirty = false;
 }
 
+function copyTransformSelection() {
+  // Only copy if transform tool has an active selection
+  if (state.tool !== "transform" || !state.transformBufferCanvas || !state.transformSelection) {
+    return;
+  }
+
+  // Create a new canvas to store the copied pixels
+  const copyCanvas = document.createElement("canvas");
+  copyCanvas.width = state.transformBufferCanvas.width;
+  copyCanvas.height = state.transformBufferCanvas.height;
+  const copyCtx = copyCanvas.getContext("2d", { alpha: true });
+  copyCtx.drawImage(state.transformBufferCanvas, 0, 0);
+
+  // Store the copied pixels and their dimensions
+  state.copiedPixels = {
+    canvas: copyCanvas,
+    width: copyCanvas.width,
+    height: copyCanvas.height
+  };
+
+  console.log(`Copied ${copyCanvas.width}×${copyCanvas.height} pixels`);
+}
+
+function pastePixels() {
+  // Check if there are copied pixels to paste
+  if (!state.copiedPixels || !state.copiedPixels.canvas) {
+    return;
+  }
+
+  const layer = getActiveLayer();
+  if (!layer || !layer.visible) {
+    return;
+  }
+
+  // Calculate paste position (center of viewport)
+  const centerX = Math.round((CANVAS_WIDTH / 2) - (state.copiedPixels.width / 2));
+  const centerY = Math.round((CANVAS_HEIGHT / 2) - (state.copiedPixels.height / 2));
+
+  // Paste the pixels into the current layer
+  layer.ctx.drawImage(
+    state.copiedPixels.canvas,
+    0, 0,
+    state.copiedPixels.width,
+    state.copiedPixels.height,
+    centerX,
+    centerY,
+    state.copiedPixels.width,
+    state.copiedPixels.height
+  );
+
+  renderComposite();
+  snapshotHistory();
+  markAsUnsaved();
+  persistDocumentSoon();
+
+  console.log(`Pasted ${state.copiedPixels.width}×${state.copiedPixels.height} pixels to layer ${layer.id}`);
+}
+
 function normalizeSelectionRect(from, to) {
   const x = Math.min(from.x, to.x);
   const y = Math.min(from.y, to.y);
@@ -3756,6 +3815,18 @@ function handleKeyboardShortcuts(event) {
   if (event.ctrlKey && key === "o") {
     event.preventDefault();
     void loadProjectWithHandle();
+    return;
+  }
+
+  if (event.ctrlKey && key === "c") {
+    event.preventDefault();
+    copyTransformSelection();
+    return;
+  }
+
+  if (event.ctrlKey && key === "v") {
+    event.preventDefault();
+    pastePixels();
     return;
   }
 
