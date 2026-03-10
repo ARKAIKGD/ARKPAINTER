@@ -2669,10 +2669,10 @@ function pastePixels() {
     return;
   }
 
-  const layer = getActiveLayer();
-  if (!layer || !layer.visible) {
-    return;
-  }
+  // Always paste into a brand new layer
+  const layer = createLayer(`Layer ${state.layers.length + 1}`);
+  state.layers.push(layer);
+  state.activeLayerId = layer.id;
 
   // Calculate paste position (center of viewport)
   const centerX = Math.round((CANVAS_WIDTH / 2) - (state.copiedPixels.width / 2));
@@ -2690,6 +2690,8 @@ function pastePixels() {
     state.copiedPixels.height
   );
 
+  updateLayerSelect();
+  updateLayerControls();
   renderComposite();
   snapshotHistory();
   markAsUnsaved();
